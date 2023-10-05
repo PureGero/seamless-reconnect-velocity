@@ -6,6 +6,7 @@ import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.JoinGame;
 import com.velocitypowered.proxy.protocol.packet.Respawn;
+import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,6 +18,10 @@ import me.puregero.seamlessreconnect.velocity.packet.SynchronizePlayerPosition;
 import me.puregero.seamlessreconnect.velocity.packet.UnloadChunk;
 import me.puregero.seamlessreconnect.velocity.packet.UpdateRecipes;
 import me.puregero.seamlessreconnect.velocity.packet.UpdateTags;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -63,6 +68,13 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
 
         if (packet instanceof Respawn) {
             visibleChunks.clear();
+        }
+
+        if (packet instanceof SystemChat systemChat) {
+            String message = PlainTextComponentSerializer.plainText().serialize(systemChat.getComponent());
+            if (message.contains("sendto:")) {
+                packet = new SystemChat(Component.text("You have been moved to server " + message.split("sendto:")[1]).color(NamedTextColor.GRAY).decorate(TextDecoration.ITALIC), systemChat.getType());
+            }
         }
 
         if (reconnecting) {
