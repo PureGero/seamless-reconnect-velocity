@@ -9,8 +9,8 @@ import com.velocitypowered.proxy.protocol.packet.Respawn;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import me.puregero.seamlessreconnect.velocity.packet.ChunkData;
 import me.puregero.seamlessreconnect.velocity.packet.ConfirmTeleport;
@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import java.util.HashSet;
 import java.util.Set;
 
-final class PlayerChannelHandler extends ChannelDuplexHandler {
+final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
 
     private final SeamlessReconnectVelocity plugin;
     private final Player player;
@@ -47,24 +47,15 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object packet) throws Exception {
-            super.channelRead(ctx, packet);
-    }
-
-    @Override
     public void write(ChannelHandlerContext ctx, Object packet, ChannelPromise promise) throws Exception {
-        if (!(packet instanceof MinecraftPacket minecraftPacket)) {
-            if (packet instanceof ByteBuf byteBuf) {
-                try {
-                    tryDecode(ctx, byteBuf, promise);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw e;
-                }
-            } else {
-                super.write(ctx, packet, promise);
+        if (packet instanceof ByteBuf byteBuf) {
+            try {
+                tryDecode(ctx, byteBuf, promise);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
             }
-            return;
         }
 
         if (packet instanceof Respawn) {
@@ -119,7 +110,7 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
             // but occasionally you get a beautiful seamless reconnect with no jittery teleportation :drool:
             player.getCurrentServer().ifPresent(serverConnection -> {
                 if (serverConnection instanceof VelocityServerConnection velocityServerConnection && velocityServerConnection.getConnection() != null) {
-                    velocityServerConnection.getConnection().write(new ConfirmTeleport(synchronizePlayerPosition.teleportId()).serialize(Unpooled.buffer(), this.player.getProtocolVersion()));
+                    velocityServerConnection.getConnection().write(new ConfirmTeleport(synchronizePlayerPosition.teleportId()).serialize(ctx.alloc().buffer(), this.player.getProtocolVersion()));
                 }
             });
             shouldWrite = false;
@@ -144,8 +135,9 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
         if (shouldWrite) {
             byteBuf.readerIndex(originalReaderIndex);
             super.write(ctx, byteBuf, promise);
-        } else if (byteBuf.isReadable()) {
-            byteBuf.skipBytes(byteBuf.readableBytes());
+        } else {
+            byteBuf.release();
+            promise.setSuccess();
         }
     }
 
