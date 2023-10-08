@@ -8,6 +8,7 @@ import com.velocitypowered.proxy.protocol.packet.JoinGame;
 import com.velocitypowered.proxy.protocol.packet.Respawn;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -118,7 +119,7 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
             // but occasionally you get a beautiful seamless reconnect with no jittery teleportation :drool:
             player.getCurrentServer().ifPresent(serverConnection -> {
                 if (serverConnection instanceof VelocityServerConnection velocityServerConnection && velocityServerConnection.getConnection() != null) {
-                    velocityServerConnection.getConnection().write(new ConfirmTeleport(synchronizePlayerPosition.teleportId()).serialize(ctx.alloc().buffer(), this.player.getProtocolVersion()));
+                    velocityServerConnection.getConnection().write(new ConfirmTeleport(synchronizePlayerPosition.teleportId()).serialize(Unpooled.buffer(), this.player.getProtocolVersion()));
                 }
             });
             shouldWrite = false;
