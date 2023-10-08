@@ -73,7 +73,8 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
         if (packet instanceof SystemChat systemChat) {
             String message = PlainTextComponentSerializer.plainText().serialize(systemChat.getComponent());
             if (message.contains("sendto:")) {
-                packet = new SystemChat(Component.text("You have been moved to server " + message.split("sendto:")[1]).color(NamedTextColor.GRAY).decorate(TextDecoration.ITALIC), systemChat.getType());
+                packet = new SystemChat(Component.text("You have been moved to " + message.split("sendto:")[1]).color(NamedTextColor.GRAY).decorate(TextDecoration.ITALIC), systemChat.getType());
+                player.sendActionBar(Component.text("Connected to " + message.split("sendto:")[1]).color(NamedTextColor.GRAY));
             }
         }
 

@@ -9,7 +9,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.network.Connections;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.slf4j.Logger;
 
 @Plugin(id = "seamless-reconnect-velocity", name = "SeamlessReconnectVelocity", version = "1.0.0", authors = {"PureGero"}, url = "https://github.com/PureGero/seamless-reconnect-velocity")
@@ -40,7 +40,7 @@ public class SeamlessReconnectVelocity {
     public void onKick(KickedFromServerEvent event) {
         event.getServerKickReason().ifPresent(component -> {
             // Convert the component to a readable string
-            String message = LegacyComponentSerializer.legacySection().serialize(component);
+            String message = PlainTextComponentSerializer.plainText().serialize(component);
             if (message.startsWith("sendto:")) {
                 ((PlayerChannelHandler) ((ConnectedPlayer) event.getPlayer())
                         .getConnection()
