@@ -144,7 +144,7 @@ final class PlayerChannelHandler extends ChannelDuplexHandler {
             byteBuf.readerIndex(originalReaderIndex);
             super.write(ctx, byteBuf, promise);
         } else if (byteBuf.isReadable()) {
-            byteBuf.readBytes(byteBuf.readableBytes());
+            byteBuf.skipBytes(byteBuf.readableBytes());
         }
     }
 
