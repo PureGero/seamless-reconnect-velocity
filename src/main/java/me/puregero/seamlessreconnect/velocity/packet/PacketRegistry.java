@@ -14,20 +14,20 @@ public class PacketRegistry {
 
     static {
         register(UnloadChunk::new,
-                map(MINECRAFT_1_20, 0x1E));
-//                map(MINECRAFT_1_20_2, 0x1F));
+                map(MINECRAFT_1_20, 0x1E),
+                map(MINECRAFT_1_20_2, 0x1F));
         register(ChunkData::new,
-                map(MINECRAFT_1_20, 0x24));
-//                map(MINECRAFT_1_20_2, 0x25));
+                map(MINECRAFT_1_20, 0x24),
+                map(MINECRAFT_1_20_2, 0x25));
         register(SynchronizePlayerPosition::new,
-                map(MINECRAFT_1_20, 0x3C));
-//                map(MINECRAFT_1_20_2, 0x3E));
+                map(MINECRAFT_1_20, 0x3C),
+                map(MINECRAFT_1_20_2, 0x3E));
         register(UpdateRecipes::new,
-                map(MINECRAFT_1_20, 0x6D));
-//                map(MINECRAFT_1_20_2, 0x6F));
+                map(MINECRAFT_1_20, 0x6D),
+                map(MINECRAFT_1_20_2, 0x6F));
         register(UpdateTags::new,
-                map(MINECRAFT_1_20, 0x6E));
-//                map(MINECRAFT_1_20_2, 0x70));
+                map(MINECRAFT_1_20, 0x6E),
+                map(MINECRAFT_1_20_2, 0x70));
     }
 
     public static Object readPacket(ProtocolVersion protocolVersion, int packetId, ByteBuf byteBuf) {

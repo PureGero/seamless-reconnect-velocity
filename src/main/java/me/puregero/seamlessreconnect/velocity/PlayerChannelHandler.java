@@ -2,11 +2,14 @@ package me.puregero.seamlessreconnect.velocity;
 
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.JoinGame;
 import com.velocitypowered.proxy.protocol.packet.Respawn;
 import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
+import com.velocitypowered.proxy.protocol.packet.config.FinishedUpdate;
+import com.velocitypowered.proxy.protocol.packet.config.StartUpdate;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,11 +37,13 @@ final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
     private final Player player;
     private final Logger logger;
     private boolean reconnecting = false;
+    private boolean reconnectingConfiguration = false;
     private boolean reconnectingPosition = false;
     private boolean reconnectingUpdateTags = false;
     private boolean reconnectingUpdateRecipes = false;
     private Set<ChunkPos> visibleChunks = new HashSet<>();
     private Set<ChunkPos> reconnectingChunks = new HashSet<>();
+    private boolean configurationState = false;
 
     PlayerChannelHandler(SeamlessReconnectVelocity plugin, Player player, Logger logger) {
         this.plugin = plugin;
@@ -48,7 +53,7 @@ final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object packet, ChannelPromise promise) throws Exception {
-        if (packet instanceof ByteBuf byteBuf) {
+        if (packet instanceof ByteBuf byteBuf && !configurationState) {
             try {
                 tryDecode(ctx, byteBuf, promise);
                 return;
@@ -57,6 +62,31 @@ final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
                 throw e;
             }
         }
+
+        // --- Configuration stuff --- //
+
+        if (packet instanceof FinishedUpdate) {
+            configurationState = false;
+            if (reconnectingConfiguration) {
+                ((ConnectedPlayer) player).getConnection().getChannel().pipeline().fireChannelRead(new FinishedUpdate());
+                reconnectingConfiguration = false;
+                return;
+            }
+        }
+
+        if (packet instanceof StartUpdate) {
+            configurationState = true;
+            if (reconnectingConfiguration) {
+                ((ConnectedPlayer) player).getConnection().getChannel().pipeline().fireChannelRead(new FinishedUpdate());
+                return;
+            }
+        }
+
+        if (configurationState && reconnectingConfiguration) {
+            return; // Don't need to send configuration packets during a seamless reconnect
+        }
+
+        // --- Play stuff --- //
 
         if (packet instanceof Respawn) {
             visibleChunks.clear();
@@ -143,6 +173,7 @@ final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
 
     public void startSeamlessReconnect() {
         reconnecting = true;
+        reconnectingConfiguration = true;
         reconnectingPosition = true;
         reconnectingUpdateTags = true;
         reconnectingUpdateRecipes = true;
