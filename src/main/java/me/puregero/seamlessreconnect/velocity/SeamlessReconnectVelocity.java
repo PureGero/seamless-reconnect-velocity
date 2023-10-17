@@ -32,6 +32,7 @@ public class SeamlessReconnectVelocity {
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
         new InitialServerFinder(this, server);
+        new PlayerLimit(this, server);
 
         logger.info("Initialised");
     }
