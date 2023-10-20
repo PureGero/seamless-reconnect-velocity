@@ -46,7 +46,7 @@ public class PlayerLimit {
 
         this.maxPlayers = Integer.parseInt(new String(event.getData(), StandardCharsets.UTF_8));
 
-        if (this.maxPlayers == 0 && !player.hasPermission(PERMISSION) && loginTimes.getOrDefault(player.getUniqueId(), Long.MAX_VALUE) > System.currentTimeMillis() - 30 * 1000) {
+        if (!"true".equalsIgnoreCase(System.getProperty("sr.disablemaxplayers")) && this.maxPlayers == 0 && !player.hasPermission(PERMISSION) && loginTimes.getOrDefault(player.getUniqueId(), Long.MAX_VALUE) > System.currentTimeMillis() - 30 * 1000) {
             player.disconnect(Component.text("The server is full.", NamedTextColor.RED));
         }
 
@@ -59,7 +59,7 @@ public class PlayerLimit {
 
         int playerCount = server.getPlayerCount();
 
-        if (playerCount >= this.maxPlayers && !event.getPlayer().hasPermission(PERMISSION)) {
+        if (!"true".equalsIgnoreCase(System.getProperty("sr.disablemaxplayers")) && playerCount >= this.maxPlayers && !event.getPlayer().hasPermission(PERMISSION)) {
             event.setResult(ResultedEvent.ComponentResult.denied(Component.text("The server is full.", NamedTextColor.RED)));
         }
     }
