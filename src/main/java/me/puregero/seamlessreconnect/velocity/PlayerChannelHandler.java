@@ -3,7 +3,6 @@ package me.puregero.seamlessreconnect.velocity;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
-import com.velocitypowered.proxy.protocol.MinecraftPacket;
 import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.packet.JoinGame;
 import com.velocitypowered.proxy.protocol.packet.Respawn;
@@ -11,7 +10,6 @@ import com.velocitypowered.proxy.protocol.packet.chat.SystemChat;
 import com.velocitypowered.proxy.protocol.packet.config.FinishedUpdate;
 import com.velocitypowered.proxy.protocol.packet.config.StartUpdate;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -154,7 +152,13 @@ final class PlayerChannelHandler extends ChannelOutboundHandlerAdapter {
 
         if (packet instanceof ChunkData chunkData) {
             // Keep track of loaded chunks
-            visibleChunks.add(chunkData.pos());
+            promise = promise.unvoid();
+            promise.addListener(future -> {
+                if (future.isSuccess()) {
+                    // Only mark the chunk as visible if it actually gets sent
+                    visibleChunks.add(chunkData.pos());
+                }
+            });
 
             if (reconnectingChunks.remove(chunkData.pos())) {
                 // Let's not send the player chunks that they already have loaded during a reconnect as this uses a lot of bandwidth and causes a brief period of lag

@@ -51,8 +51,6 @@ public class PlayerLimit {
             return;
         }
 
-        System.out.println("Nodes: " + user.resolveInheritedNodes(QueryOptions.nonContextual()).stream().toList());
-
         int maxPlayers = user.resolveInheritedNodes(QueryOptions.nonContextual()).stream()
                 .filter(node -> node.getKey().startsWith(PREFIX))
                 .map(node -> {
