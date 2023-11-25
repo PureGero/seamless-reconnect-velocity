@@ -1,5 +1,6 @@
 package me.puregero.seamlessreconnect.velocity;
 
+import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
@@ -61,11 +62,12 @@ public class InitialServerFinder {
     }
 
     @Subscribe
-    public void onKick(PlayerChooseInitialServerEvent event) {
+    public void onKick(PlayerChooseInitialServerEvent event, Continuation continuation) {
         List<RegisteredServer> servers = new ArrayList<>(server.getAllServers());
         servers.removeIf(server -> server.getPlayersConnected().isEmpty());
 
         if (servers.isEmpty()) {
+            continuation.resume();
             return;
         }
 
@@ -77,18 +79,21 @@ public class InitialServerFinder {
         boolean wasSent = server.sendPluginMessage(IDENTIFIER, event.getPlayer().getUniqueId().toString().getBytes(StandardCharsets.UTF_8));
 
         if (!wasSent) {
+            continuation.resume();
             return;
         }
 
-        String serverName = future.completeOnTimeout(null, 3, TimeUnit.SECONDS).join(); // Short delay so that we don't block this pooled thread too long (what happens if we end up accidentally blocking every thread?)
-        RegisteredServer serverToSendTo = Optional.ofNullable(serverName).flatMap(this.server::getServer).orElse(null);
+        future.completeOnTimeout(null, 5, TimeUnit.SECONDS).thenAccept(serverName -> {
+            RegisteredServer serverToSendTo = Optional.ofNullable(serverName).flatMap(this.server::getServer).orElse(null);
 
-        if (serverToSendTo == null) {
-            event.getPlayer().disconnect(Component.text("Could not find a server to send you to.\nAre the servers under heavy load?").color(NamedTextColor.RED));
-            event.setInitialServer(null);
-            return;
-        }
+            if (serverToSendTo == null) {
+                event.getPlayer().disconnect(Component.text("Could not find a server to send you to.\nAre the servers under heavy load?").color(NamedTextColor.RED));
+                event.setInitialServer(null);
+            } else {
+                event.setInitialServer(serverToSendTo);
+            }
 
-        event.setInitialServer(serverToSendTo);
+            continuation.resume();
+        }).exceptionally(e -> { continuation.resumeWithException(e); return null; });
     }
 }
