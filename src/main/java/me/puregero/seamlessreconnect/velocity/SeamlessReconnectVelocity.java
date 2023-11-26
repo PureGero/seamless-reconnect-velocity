@@ -53,6 +53,8 @@ public class SeamlessReconnectVelocity {
                         registeredServer ->
                                 event.setResult(KickedFromServerEvent.RedirectPlayer.create(registeredServer)),
                         () -> System.out.println("Could not find server to sendto " + serverName));
+            } else {
+                event.setResult(KickedFromServerEvent.DisconnectPlayer.create(component));
             }
         });
     }
